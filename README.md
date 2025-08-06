@@ -26,7 +26,7 @@
 ## 📂 Project Overview
 
 The project is divided into two main parts:
-
+Requirements:- https://docs.google.com/document/d/1MDqkpOW_LfZMtyTxA3ZWaWlCJAVV979Oxy8-5Imzxl0/edit?tab=t.0 
 - `/client`: React + Material UI frontend  
 - `/server`: Go backend with REST APIs and Firebase integration
 
