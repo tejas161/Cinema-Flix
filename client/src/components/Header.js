@@ -20,30 +20,59 @@ import {
   Search as SearchIcon,
   AccountCircle,
   MovieFilter,
+  Login as LoginIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
   const menuItems = ['Movies', 'Events', 'Sports', 'Activities'];
 
   const drawer = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center', pt: 2 }}>
+    <Box sx={{ textAlign: 'center', pt: 2 }}>
       <Typography variant="h6" sx={{ my: 2, color: 'primary.main' }}>
         CinemaFlix
       </Typography>
       <List>
         {menuItems.map((item) => (
-          <ListItem key={item} disablePadding>
+          <ListItem key={item} disablePadding onClick={handleDrawerToggle}>
             <ListItemText primary={item} sx={{ textAlign: 'center' }} />
           </ListItem>
         ))}
+        <ListItem disablePadding>
+          <Box sx={{ width: '100%', p: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<LoginIcon />}
+              onClick={() => {
+                handleDrawerToggle();
+                handleLoginClick();
+              }}
+              fullWidth
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 1.5,
+              }}
+            >
+              Sign In
+            </Button>
+          </Box>
+        </ListItem>
       </List>
     </Box>
   );
@@ -143,12 +172,35 @@ const Header = () => {
             />
           </Box>
 
-          {/* User Account */}
+          {/* Login Button */}
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<LoginIcon />}
+            onClick={handleLoginClick}
+            sx={{ 
+              ml: 2,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: { xs: 1, md: 2 },
+              fontSize: { xs: '0.8rem', md: '0.9rem' },
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(229, 9, 20, 0.3)',
+              },
+              transition: 'all 0.2s ease-in-out',
+            }}
+          >
+            {isMobile ? '' : 'Sign In'}
+          </Button>
+
+          {/* User Account (hidden for now, can be shown after login) */}
           <IconButton
             size="large"
             edge="end"
             color="inherit"
-            sx={{ ml: 2 }}
+            sx={{ ml: 1, display: 'none' }} // Hidden until user is logged in
           >
             <AccountCircle />
           </IconButton>
