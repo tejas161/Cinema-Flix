@@ -1,9 +1,7 @@
 package handlers
 
-import (
-	"net/http"
-)
+import "github.com/gofiber/fiber/v2"
 
-func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("OK"))
+func HealthCheck(c *fiber.Ctx) error {
+    return c.SendString("OK")
 }
