@@ -11,7 +11,7 @@ import {
 import { ArrowForward } from '@mui/icons-material';
 import MovieCard from './MovieCard';
 
-const MovieSection = ({ title, movies, showViewAll = true }) => {
+const MovieSection = ({ title, movies, showViewAll = true, onMovieClick, onSeeAll }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -53,6 +53,7 @@ const MovieSection = ({ title, movies, showViewAll = true }) => {
           {showViewAll && (
             <Button
               endIcon={<ArrowForward />}
+              onClick={onSeeAll}
               sx={{
                 color: 'primary.main',
                 textTransform: 'none',
@@ -78,7 +79,7 @@ const MovieSection = ({ title, movies, showViewAll = true }) => {
                 md={3}
                 key={movie.id || index}
               >
-                <MovieCard movie={movie} />
+                <MovieCard movie={movie} onClick={onMovieClick} />
               </Grid>
             ))}
           </Grid>

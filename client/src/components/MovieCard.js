@@ -12,18 +12,30 @@ import {
 } from '@mui/material';
 import { PlayArrow, Favorite, Star } from '@mui/icons-material';
 
-const MovieCard = ({ movie }) => {
+const MovieCard = ({ movie, onClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick(movie.id);
+    }
+  };
+
   return (
     <Card
+      onClick={handleClick}
       sx={{
         width: '100%',
         height: { xs: 320, sm: 400 },
         position: 'relative',
         cursor: 'pointer',
         overflow: 'hidden',
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: theme.shadows[8],
+        }
       }}
     >
       <CardMedia

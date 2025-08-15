@@ -1,42 +1,316 @@
 # 🎬 Cinema Flix
 
-**Cinema Flix** is a full-stack movie ticket reservation system where users can browse movies, view showtimes, select seats, and book tickets seamlessly.
+**Cinema Flix** is a modern, full-stack movie discovery and ticket booking platform built with React and Go. Users can browse movies with advanced search and filtering, view detailed movie information, and book tickets with Google OAuth authentication.
 
 ---
 
-## 🛠️ Built With
+## 🌟 Features
 
-- **[React](https://reactjs.org/):** Frontend framework for building a fast and interactive UI  
-- **[Material UI](https://mui.com/):** Component library for sleek and responsive design  
-- **[Go (Golang)](https://golang.org/):** Backend server powering the APIs  
-- **[MongoDB](https://www.mongodb.com/):** NoSQL database for secure and scalable data handling  
+### 🎭 **Movie Discovery**
+- **Advanced Search**: Search movies by title, director, cast, or genre
+- **Smart Filtering**: Filter by genre, category (Now Playing, Coming Soon, Trending)
+- **Multiple Views**: Switch between grid and list layouts
+- **Real-time Results**: Instant search and filter updates
+
+### 🎬 **Movie Details**
+- **IMDB-style Pages**: Comprehensive movie information with ratings, cast, and plot
+- **Rich Media**: High-quality posters, backdrops, and trailer integration
+- **Cast & Crew**: Detailed actor information with photos and character names
+- **Box Office Data**: Budget, earnings, and production information
+- **Show Times**: Available screening times with booking integration
+
+### 🔐 **Authentication**
+- **Google OAuth 2.0**: Secure login with Google accounts
+- **User Profiles**: Personalized user experience with profile management
+- **Session Management**: Persistent login state with secure logout
+- **Professional Logging**: Comprehensive authentication activity tracking
+
+### 🎫 **Ticket Booking**
+- **Show Time Selection**: Choose from available screening times
+- **Booking Interface**: Intuitive ticket reservation system
+- **User Management**: Track bookings with authenticated users
+
+### 📱 **Responsive Design**
+- **Mobile-First**: Optimized for all screen sizes
+- **Material Design**: Clean, modern UI with Material-UI components
+- **Dark Theme**: Professional cinema-themed interface
+- **Accessibility**: ARIA labels and keyboard navigation support
 
 ---
 
-## ✨ Features
+## 🛠️ Tech Stack
 
-- View movie listings and details  
-- Select showtimes and available seats  
-- Book tickets in real-time  
-- User authentication with JWT and MongoDB  
-- Mobile-friendly and responsive design
+### **Frontend**
+- **[React 19](https://reactjs.org/)** - Modern React with latest features
+- **[Material-UI (MUI)](https://mui.com/)** - Comprehensive component library
+- **[React Router](https://reactrouter.com/)** - Client-side routing
+- **JavaScript ES6+** - Modern JavaScript features
 
----
+### **Backend**
+- **[Go (Golang)](https://golang.org/)** - High-performance backend server
+- **[Fiber](https://gofiber.io/)** - Express-inspired web framework
+- **[Google OAuth 2.0](https://developers.google.com/identity/protocols/oauth2)** - Secure authentication
+- **Environment Variables** - Secure configuration management
 
-## 📂 Project Overview
-
-The project is divided into two main parts:
-- `/client`: React + Material UI frontend  
-- `/server`: Backend with REST APIs and MongoDB integration
-
-Requirements:- https://docs.google.com/document/d/1MDqkpOW_LfZMtyTxA3ZWaWlCJAVV979Oxy8-5Imzxl0/edit?tab=t.0 
-
----
-
-## 🚀 Getting Started
-
-Instructions for local setup coming soon.
+### **Development Tools**
+- **Professional Logging** - Comprehensive request/response tracking
+- **CORS Support** - Cross-origin resource sharing
+- **Hot Reload** - Development server with auto-refresh
+- **Linting & Formatting** - Code quality tools
 
 ---
 
-Stay tuned as **Cinema Flix** evolves into a full-featured movie ticket booking platform!
+## 📂 Project Structure
+
+```
+Cinema_Flix/
+├── client/                    # React Frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── components/        # Reusable UI components
+│   │   │   ├── Header.js      # Navigation with auth integration
+│   │   │   ├── MovieCard.js   # Movie display component
+│   │   │   ├── MovieSection.js # Movie listing sections
+│   │   │   ├── UserProfile.js # User profile dropdown
+│   │   │   └── Footer.js      # Footer component
+│   │   ├── contexts/          # React contexts
+│   │   │   └── AuthContext.js # Authentication state management
+│   │   ├── data/              # Movie data and utilities
+│   │   │   └── moviesData.js  # Enhanced movie database
+│   │   ├── pages/             # Main application pages
+│   │   │   ├── HomePage.js    # Landing page with featured movies
+│   │   │   ├── MoviesPage.js  # Complete movie browsing experience
+│   │   │   ├── MovieDetailPage.js # Detailed movie information
+│   │   │   ├── LoginPage.js   # Google OAuth login
+│   │   │   └── AuthCallback.js # OAuth callback handler
+│   │   ├── theme.js           # Material-UI theme configuration
+│   │   └── App.js             # Main application component
+│   ├── package.json           # Dependencies and scripts
+│   └── .env                   # Environment variables (create this)
+├── server/                    # Go Backend
+│   ├── internal/
+│   │   ├── config/            # Configuration management
+│   │   │   └── oauth.go       # OAuth configuration
+│   │   ├── handlers/          # HTTP request handlers
+│   │   │   ├── oauth.go       # Authentication handlers
+│   │   │   └── health.go      # Health check endpoint
+│   │   └── routes/            # API route definitions
+│   │       └── routes.go      # Route setup
+│   ├── main.go                # Server entry point
+│   ├── go.mod                 # Go module dependencies
+│   └── .env                   # Environment variables (create this)
+└── README.md                  # Project documentation
+```
+
+---
+
+## 🚀 Quick Start
+
+### **Prerequisites**
+- **Node.js** (v16 or higher)
+- **Go** (v1.19 or higher)
+- **Google Cloud Console** account for OAuth setup
+
+### **1. Clone the Repository**
+```bash
+git clone <your-repo-url>
+cd Cinema_Flix
+```
+
+### **2. Google OAuth Setup**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials:
+   - **Authorized JavaScript origins**: `http://localhost:3000`
+   - **Authorized redirect URIs**: `http://localhost:8080/auth/google/callback`
+
+### **3. Backend Setup**
+```bash
+cd server
+
+# Create environment file
+cat > .env << EOF
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+redirectURL=http://localhost:8080
+PORT=8080
+CLIENT_URL=http://localhost:3000
+EOF
+
+# Install dependencies and run
+go mod tidy
+go run main.go
+```
+
+### **4. Frontend Setup**
+```bash
+cd client
+
+# Create environment file
+cat > .env << EOF
+REACT_APP_BACKEND_URL=http://localhost:8080
+REACT_APP_ENV=development
+EOF
+
+# Install dependencies and run
+npm install
+npm start
+```
+
+### **5. Access the Application**
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
+- **Health Check**: http://localhost:8080/health
+
+---
+
+## 🎯 API Endpoints
+
+### **Authentication**
+- `GET /auth/google/login` - Initiate Google OAuth login
+- `GET /auth/google/callback` - Handle OAuth callback
+- `POST /auth/logout` - User logout with logging
+
+### **Health & Monitoring**
+- `GET /health` - Server health check
+
+---
+
+## 🎬 Movie Data Structure
+
+```javascript
+{
+  id: 1,
+  title: "Movie Title",
+  poster: "poster_url",
+  backdrop: "backdrop_url", 
+  rating: "8.2",
+  imdbRating: "8.2/10",
+  genres: ["Action", "Adventure"],
+  duration: "148 min",
+  runtime: 148,
+  language: "English",
+  languages: ["English", "Spanish"],
+  releaseDate: "2021-12-17",
+  director: "Director Name",
+  cast: [
+    {
+      name: "Actor Name",
+      character: "Character Name", 
+      image: "actor_image_url"
+    }
+  ],
+  plot: "Movie description...",
+  status: "now-playing", // now-playing, coming-soon, trending
+  certification: "PG-13",
+  budget: "$200,000,000",
+  boxOffice: "$1.921 billion",
+  production: "Production Company",
+  showTimes: ["10:00 AM", "1:30 PM", "4:45 PM"]
+}
+```
+
+---
+
+## 🔒 Environment Variables
+
+### **Backend (.env)**
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret  
+redirectURL=http://localhost:8080
+PORT=8080
+CLIENT_URL=http://localhost:3000
+```
+
+### **Frontend (.env)**
+```env
+REACT_APP_BACKEND_URL=http://localhost:8080
+REACT_APP_ENV=development
+```
+
+---
+
+## 📱 Screenshots
+
+### **Homepage**
+- Featured movie sections with modern card layouts
+- Quick access to movie browsing
+- Responsive navigation with authentication
+
+### **Movies Page** 
+- Advanced search and filtering interface
+- Grid/List view toggle
+- Category tabs (Now Playing, Coming Soon, Trending)
+- Real-time search results
+
+### **Movie Detail Page**
+- IMDB-style comprehensive movie information
+- Cast and crew details with photos
+- Ticket booking interface
+- Trailer integration
+
+### **Authentication**
+- Clean Google OAuth login interface
+- User profile dropdown with logout
+- Secure session management
+
+---
+
+## 🚀 Deployment
+
+### **Production Environment Variables**
+
+**Backend:**
+```env
+GOOGLE_CLIENT_ID=prod_client_id
+GOOGLE_CLIENT_SECRET=prod_client_secret
+redirectURL=https://your-api-domain.com
+PORT=8080
+CLIENT_URL=https://your-frontend-domain.com
+```
+
+**Frontend:**
+```env
+REACT_APP_BACKEND_URL=https://your-api-domain.com
+REACT_APP_ENV=production
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Material-UI** for the excellent component library
+- **Google OAuth** for secure authentication
+- **Unsplash** for high-quality movie poster placeholders
+- **Go Fiber** for the fast and flexible backend framework
+
+---
+
+## 📞 Support
+
+For support and questions:
+- Create an [Issue](../../issues)
+- Check the [Documentation](../../wiki)
+- Review the [Requirements](https://docs.google.com/document/d/1MDqkpOW_LfZMtyTxA3ZWaWlCJAVV979Oxy8-5Imzxl0/edit?tab=t.0)
+
+---
+
+**Cinema Flix** - *Discover Movies. Book Tickets. Enjoy Cinema.* 🎬✨
