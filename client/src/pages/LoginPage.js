@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -8,13 +8,16 @@ import {
   useMediaQuery,
   Stack,
   IconButton,
-  Tooltip
+  Tooltip,
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import GoogleIcon from '@mui/icons-material/Google';
 import MovieIcon from '@mui/icons-material/Movie';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 // Simple design with no animations
 
@@ -26,10 +29,6 @@ const LoginContainer = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'center',
 }));
-
-
-
-
 
 const GoogleButton = styled(Button)(({ theme }) => ({
   padding: theme.spacing(1.5, 4),
@@ -63,26 +62,62 @@ const BackButton = styled(IconButton)(({ theme }) => ({
 const LoginPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleGoogleSignIn = async () => {
+  useEffect(() => {
+    // Redirect to home if already authenticated (but wait for auth loading to complete)
+    if (!authLoading && isAuthenticated) {
+      navigate('/');
+      return;
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    // Check for error parameters (separate effect to avoid dependency issues)
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      const errorMessages = {
+        auth_failed: 'Authentication failed. Please try again.',
+        user_info_failed: 'Failed to retrieve user information.',
+        decode_failed: 'Failed to process user data.',
+        parse_error: 'Failed to parse authentication data.',
+        no_user_data: 'No user data received.',
+      };
+      setError(errorMessages[errorParam] || 'An unknown error occurred.');
+    }
+  }, [searchParams]);
+
+  const handleGoogleSignIn = () => {
     setIsLoading(true);
+    setError('');
     
-    // Simulate loading for demo purposes
-    // In a real app, you would integrate with Google OAuth
-    setTimeout(() => {
-      console.log('Google Sign-In initiated');
-      // Here you would handle the actual Google OAuth flow
-      // For now, we'll just simulate success
-      setIsLoading(false);
-      // navigate('/'); // Uncomment when ready to redirect
-    }, 2000);
+    // Redirect to backend OAuth endpoint
+    window.location.href = process.env.REACT_APP_SERVER_URL + '/auth/google/login';
   };
 
   const handleBackToHome = () => {
     navigate('/');
   };
+
+  // Show loading while auth context is initializing
+  if (authLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <LoginContainer>
@@ -130,6 +165,20 @@ const LoginPage = () => {
           </Typography>
 
           <Stack spacing={3} alignItems="center">
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  width: '100%', 
+                  maxWidth: '400px',
+                  borderRadius: 2
+                }}
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            )}
+            
             <GoogleButton
               variant="contained"
               size="large"
@@ -149,7 +198,7 @@ const LoginPage = () => {
                 py: 1.5,
               }}
             >
-              {isLoading ? 'Signing in...' : 'Continue with Google'}
+              {isLoading ? 'Redirecting...' : 'Continue with Google'}
             </GoogleButton>
 
             <Typography

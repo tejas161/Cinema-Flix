@@ -23,12 +23,15 @@ import {
   Login as LoginIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import UserProfile from './UserProfile';
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -38,7 +41,12 @@ const Header = () => {
     navigate('/login');
   };
 
-  const menuItems = ['Movies', 'Events', 'Sports', 'Activities'];
+  const menuItems = [
+    { label: 'Movies', path: '/movies' },
+    { label: 'Events', path: '/events' },
+    { label: 'Sports', path: '/sports' },
+    { label: 'Activities', path: '/activities' }
+  ];
 
   const drawer = (
     <Box sx={{ textAlign: 'center', pt: 2 }}>
@@ -46,31 +54,47 @@ const Header = () => {
         CinemaFlix
       </Typography>
       <List>
-        {menuItems.map((item) => (
-          <ListItem key={item} disablePadding onClick={handleDrawerToggle}>
-            <ListItemText primary={item} sx={{ textAlign: 'center' }} />
+        {menuItems.map((item, index) => (
+          <ListItem 
+            key={index} 
+            disablePadding 
+            onClick={() => {
+              handleDrawerToggle();
+              if (item.path === '/movies') {
+                navigate(item.path);
+              }
+            }}
+            sx={{ cursor: 'pointer' }}
+          >
+            <ListItemText primary={item.label} sx={{ textAlign: 'center' }} />
           </ListItem>
         ))}
         <ListItem disablePadding>
           <Box sx={{ width: '100%', p: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<LoginIcon />}
-              onClick={() => {
-                handleDrawerToggle();
-                handleLoginClick();
-              }}
-              fullWidth
-              sx={{
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                py: 1.5,
-              }}
-            >
-              Sign In
-            </Button>
+            {isAuthenticated ? (
+              <Box sx={{ textAlign: 'center' }}>
+                <UserProfile />
+              </Box>
+            ) : (
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<LoginIcon />}
+                onClick={() => {
+                  handleDrawerToggle();
+                  handleLoginClick();
+                }}
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  py: 1.5,
+                }}
+              >
+                Sign In
+              </Button>
+            )}
           </Box>
         </ListItem>
       </List>
@@ -114,19 +138,25 @@ const Header = () => {
           {/* Desktop Navigation */}
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              {menuItems.map((item) => (
+              {menuItems.map((item, index) => (
                 <Button
-                  key={item}
+                  key={index}
                   color="inherit"
+                  onClick={() => {
+                    if (item.path === '/movies') {
+                      navigate(item.path);
+                    }
+                  }}
                   sx={{ 
                     mx: 1, 
                     fontSize: '0.9rem',
+                    textTransform: 'none',
                     '&:hover': {
                       color: 'primary.main',
                     }
                   }}
                 >
-                  {item}
+                  {item.label}
                 </Button>
               ))}
             </Box>
@@ -172,38 +202,34 @@ const Header = () => {
             />
           </Box>
 
-          {/* Login Button */}
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<LoginIcon />}
-            onClick={handleLoginClick}
-            sx={{ 
-              ml: 2,
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              px: { xs: 1, md: 2 },
-              fontSize: { xs: '0.8rem', md: '0.9rem' },
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 12px rgba(229, 9, 20, 0.3)',
-              },
-              transition: 'all 0.2s ease-in-out',
-            }}
-          >
-            {isMobile ? '' : 'Sign In'}
-          </Button>
-
-          {/* User Account (hidden for now, can be shown after login) */}
-          <IconButton
-            size="large"
-            edge="end"
-            color="inherit"
-            sx={{ ml: 1, display: 'none' }} // Hidden until user is logged in
-          >
-            <AccountCircle />
-          </IconButton>
+          {/* Authentication Section */}
+          {isAuthenticated ? (
+            <Box sx={{ ml: 2 }}>
+              <UserProfile />
+            </Box>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<LoginIcon />}
+              onClick={handleLoginClick}
+              sx={{ 
+                ml: 2,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: { xs: 1, md: 2 },
+                fontSize: { xs: '0.8rem', md: '0.9rem' },
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(229, 9, 20, 0.3)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              {isMobile ? '' : 'Sign In'}
+            </Button>
+          )}
         </Toolbar>
       </AppBar>
 
