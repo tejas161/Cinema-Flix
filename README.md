@@ -60,50 +60,6 @@
 
 ---
 
-## 📂 Project Structure
-
-```
-Cinema_Flix/
-├── client/                    # React Frontend
-│   ├── public/
-│   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   │   ├── Header.js      # Navigation with auth integration
-│   │   │   ├── MovieCard.js   # Movie display component
-│   │   │   ├── MovieSection.js # Movie listing sections
-│   │   │   ├── UserProfile.js # User profile dropdown
-│   │   │   └── Footer.js      # Footer component
-│   │   ├── contexts/          # React contexts
-│   │   │   └── AuthContext.js # Authentication state management
-│   │   ├── data/              # Movie data and utilities
-│   │   │   └── moviesData.js  # Enhanced movie database
-│   │   ├── pages/             # Main application pages
-│   │   │   ├── HomePage.js    # Landing page with featured movies
-│   │   │   ├── MoviesPage.js  # Complete movie browsing experience
-│   │   │   ├── MovieDetailPage.js # Detailed movie information
-│   │   │   ├── LoginPage.js   # Google OAuth login
-│   │   │   └── AuthCallback.js # OAuth callback handler
-│   │   ├── theme.js           # Material-UI theme configuration
-│   │   └── App.js             # Main application component
-│   ├── package.json           # Dependencies and scripts
-│   └── .env                   # Environment variables (create this)
-├── server/                    # Go Backend
-│   ├── internal/
-│   │   ├── config/            # Configuration management
-│   │   │   └── oauth.go       # OAuth configuration
-│   │   ├── handlers/          # HTTP request handlers
-│   │   │   ├── oauth.go       # Authentication handlers
-│   │   │   └── health.go      # Health check endpoint
-│   │   └── routes/            # API route definitions
-│   │       └── routes.go      # Route setup
-│   ├── main.go                # Server entry point
-│   ├── go.mod                 # Go module dependencies
-│   └── .env                   # Environment variables (create this)
-└── README.md                  # Project documentation
-```
-
----
-
 ## 🚀 Quick Start
 
 ### **Prerequisites**
@@ -174,43 +130,6 @@ npm start
 
 ### **Health & Monitoring**
 - `GET /health` - Server health check
-
----
-
-## 🎬 Movie Data Structure
-
-```javascript
-{
-  id: 1,
-  title: "Movie Title",
-  poster: "poster_url",
-  backdrop: "backdrop_url", 
-  rating: "8.2",
-  imdbRating: "8.2/10",
-  genres: ["Action", "Adventure"],
-  duration: "148 min",
-  runtime: 148,
-  language: "English",
-  languages: ["English", "Spanish"],
-  releaseDate: "2021-12-17",
-  director: "Director Name",
-  cast: [
-    {
-      name: "Actor Name",
-      character: "Character Name", 
-      image: "actor_image_url"
-    }
-  ],
-  plot: "Movie description...",
-  status: "now-playing", // now-playing, coming-soon, trending
-  certification: "PG-13",
-  budget: "$200,000,000",
-  boxOffice: "$1.921 billion",
-  production: "Production Company",
-  showTimes: ["10:00 AM", "1:30 PM", "4:45 PM"]
-}
-```
-
 ---
 
 ## 🔒 Environment Variables
