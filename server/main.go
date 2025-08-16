@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
+	"github.com/tejas161/Cinema-Flix/internal/config"
 	"github.com/tejas161/Cinema-Flix/internal/routes"
 )
 
@@ -58,6 +59,16 @@ func main() {
 	if clientURL == "" {
 		clientURL = "http://localhost:3000"
 	}
+
+	// Initialize MongoDB connection
+	if err := config.InitMongoDB(); err != nil {
+		log.Fatalf("Failed to initialize MongoDB: %v", err)
+	}
+	defer func() {
+		if err := config.DisconnectMongoDB(); err != nil {
+			log.Printf("Error disconnecting from MongoDB: %v", err)
+		}
+	}()
 
 	// Add CORS middleware
 	app.Use(cors.New(cors.Config{

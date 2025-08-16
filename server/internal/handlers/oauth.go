@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/tejas161/Cinema-Flix/db"
+	"github.com/tejas161/Cinema-Flix/models"
 	"golang.org/x/oauth2"
 )
 
@@ -80,15 +82,42 @@ func GoogleCallback(googleConfig *oauth2.Config) fiber.Handler {
 			return c.Redirect(getClientURL()+"/login?error=decode_failed", fiber.StatusTemporaryRedirect)
 		}
 
-		// Log successful authentication
-		log.Printf("[AUTH] User authentication successful")
-		log.Printf("  Email: %s", userInfo.Email)
-		log.Printf("  Name: %s", userInfo.Name)
-		log.Printf("  Picture: %s", userInfo.Picture)
-		log.Printf("  Login Time: %s", getCurrentTimestamp())
+		// Save/update user in MongoDB
+		log.Printf("[AUTH] Saving user to database...")
+		userRepo := db.NewUserRepository()
+
+		// Create user model from Google user info
+		user := models.NewUser(userInfo.ID, userInfo.Email, userInfo.Name, userInfo.Picture)
+
+		// Upsert user in database
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		savedUser, err := userRepo.UpsertUser(ctx, user)
+		if err != nil {
+			log.Printf("[AUTH] ERROR: Failed to save user to database: %v", err)
+			return c.Redirect(getClientURL()+"/login?error=database_failed", fiber.StatusTemporaryRedirect)
+		}
+
+		log.Printf("[AUTH] User successfully saved to database")
+
+		// Create response with database user info
+		responseData := fiber.Map{
+			"id":         savedUser.ID.Hex(),
+			"google_id":  savedUser.GoogleID,
+			"email":      savedUser.Email,
+			"name":       savedUser.Name,
+			"picture":    savedUser.Picture,
+			"created_at": savedUser.CreatedAt,
+			"updated_at": savedUser.UpdatedAt,
+		}
 
 		// Encode user data as URL parameters
-		userDataJSON, _ := json.Marshal(userInfo)
+		userDataJSON, err := json.Marshal(responseData)
+		if err != nil {
+			log.Printf("[AUTH] ERROR: Failed to marshal user data: %v", err)
+			return c.Redirect(getClientURL()+"/login?error=marshal_failed", fiber.StatusTemporaryRedirect)
+		}
 		encodedUserData := url.QueryEscape(string(userDataJSON))
 
 		log.Printf("[AUTH] Redirecting user to frontend...")
@@ -119,26 +148,58 @@ func getClientURL() string {
 	return clientURL
 }
 
+// GetUser returns user information by user ID
+func GetUser() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Params("id")
+		if userID == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "User ID is required",
+			})
+		}
+
+		// Get user from database
+		userRepo := db.NewUserRepository()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		user, err := userRepo.FindUserByID(ctx, userID)
+		if err != nil {
+			log.Printf("[AUTH] ERROR: Failed to get user from database: %v", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"success": false,
+				"error":   "Failed to retrieve user information",
+			})
+		}
+
+		if user == nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"success": false,
+				"error":   "User not found",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"success": true,
+			"user": fiber.Map{
+				"id":         user.ID.Hex(),
+				"google_id":  user.GoogleID,
+				"email":      user.Email,
+				"name":       user.Name,
+				"picture":    user.Picture,
+				"created_at": user.CreatedAt,
+				"updated_at": user.UpdatedAt,
+			},
+		})
+	}
+}
+
 // Logout handles user logout
 func Logout() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		clientIP := c.IP()
-		userAgent := c.Get("User-Agent")
-
-		// Extract user info from request if available (e.g., from headers or body)
-		userID := c.Get("X-User-ID")
-		userEmail := c.Get("X-User-Email")
 
 		log.Printf("[AUTH] User logout initiated")
-		log.Printf("  Client IP: %s", clientIP)
-		log.Printf("  User Agent: %s", userAgent)
-		if userID != "" {
-			log.Printf("  User ID: %s", userID)
-		}
-		if userEmail != "" {
-			log.Printf("  Email: %s", userEmail)
-		}
-		log.Printf("  Logout Time: %s", getCurrentTimestamp())
 
 		// In a real application, you might want to:
 		// - Invalidate tokens in database
@@ -151,6 +212,44 @@ func Logout() fiber.Handler {
 			"success":   true,
 			"message":   "Logged out successfully",
 			"timestamp": getCurrentTimestamp(),
+		})
+	}
+}
+
+// GetProfile returns the current user's profile information
+// This endpoint requires authentication via middleware
+func GetProfile() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// User info is available from middleware context
+		user := c.Locals("user")
+		if user == nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"error":   "Authentication required",
+			})
+		}
+
+		// Type assert the user
+		userModel, ok := user.(*models.User)
+		if !ok {
+			log.Printf("[AUTH] ERROR: Invalid user type in context")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"success": false,
+				"error":   "Internal server error",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"success": true,
+			"user": fiber.Map{
+				"id":         userModel.ID.Hex(),
+				"google_id":  userModel.GoogleID,
+				"email":      userModel.Email,
+				"name":       userModel.Name,
+				"picture":    userModel.Picture,
+				"created_at": userModel.CreatedAt,
+				"updated_at": userModel.UpdatedAt,
+			},
 		})
 	}
 }
