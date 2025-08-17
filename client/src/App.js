@@ -7,6 +7,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 
 import MovieDetailPage from './pages/MovieDetailPage';
+import AvailableTheaters from './pages/AvailableTheaters';
+import SeatSelection from './pages/SeatSelection';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
 
@@ -19,6 +21,8 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/movie/:id" element={<MovieDetailPage />} />
+            <Route path="/movie/:id/theaters" element={<AvailableTheaters />} />
+            <Route path="/movie/:id/booking/:showtimeId" element={<SeatSelection />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>

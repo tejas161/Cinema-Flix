@@ -31,7 +31,8 @@ import {
   TrendingUp,
   Movie as MovieIcon,
   Business,
-  Public
+  Public,
+  EventSeat
 } from '@mui/icons-material';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -245,6 +246,20 @@ const MovieDetailPage = () => {
               </Box>
 
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<EventSeat />}
+                  onClick={() => navigate(`/movie/${id}/theaters`)}
+                  sx={{ 
+                    px: 4, 
+                    py: 1.5,
+                    backgroundColor: '#ff6b35',
+                    '&:hover': { backgroundColor: '#e55a2e' }
+                  }}
+                >
+                  Book Tickets
+                </Button>
                 <Button
                   variant="contained"
                   size="large"

@@ -13,16 +13,28 @@ import (
 // Expects user ID to be passed in X-User-ID header
 func RequireAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userID := c.Get("X-User-ID")
+		// Get user information from auth headers
+		// Get userId from JSON body (googleId or id field)
+		var userPayload struct {
+			GoogleID string `json:"googleId"`
+			ID       string `json:"id"`
+		}
+		_ = c.BodyParser(&userPayload)
+		userID := userPayload.GoogleID
+		if userID == "" {
+			userID = userPayload.ID
+		}
+
+		log.Printf("google user id %s", userID);
 
 		if userID == "" {
-			log.Printf("[AUTH] Unauthorized request: missing user ID header")
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			return c.Status(401).JSON(fiber.Map{
 				"success": false,
-				"error":   "Authentication required",
+				"error":   "User authentication required",
 			})
 		}
 
+		
 		// Verify user exists in database
 		userRepo := db.NewUserRepository()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -59,7 +71,16 @@ func RequireAuth() fiber.Handler {
 // Similar to RequireAuth but doesn't fail if no auth is provided
 func OptionalAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userID := c.Get("X-User-ID")
+		var userPayload struct {
+			GoogleID string `json:"googleId"`
+			ID       string `json:"id"`
+		}
+		_ = c.BodyParser(&userPayload)
+		log.Printf("User payload: %v", userPayload);
+		userID := userPayload.GoogleID
+		if userID == "" {
+			userID = userPayload.ID
+		}
 
 		if userID == "" {
 			// No authentication provided, continue without user context
