@@ -93,6 +93,63 @@ const AvailableTheaters = () => {
     return 'Few Seats Left';
   };
 
+  // Helper functions for format display
+  const getFormatIcon = (format) => {
+    switch(format) {
+      case 'Standard': return '🎬';
+      case '3D': return '🥽';
+      case '4DX': return '🚀';
+      case 'IMAX': return '🎯';
+      case 'Premium': return '👑';
+      default: return '🎬';
+    }
+  };
+
+  const getFormatLabel = (format) => {
+    switch(format) {
+      case 'Standard': return 'Standard';
+      case '3D': return '3D Experience';
+      case '4DX': return '4DX Motion';
+      case 'IMAX': return 'IMAX Large Screen';
+      case 'Premium': return 'Premium Luxury';
+      default: return 'Standard';
+    }
+  };
+
+  const getFormatDescription = (format) => {
+    switch(format) {
+      case 'Standard': return 'Classic cinema experience';
+      case '3D': return 'Immersive 3D visuals';
+      case '4DX': return 'Motion seats & special effects';
+      case 'IMAX': return 'Giant screen & premium sound';
+      case 'Premium': return 'Luxury seating & service';
+      default: return 'Standard viewing';
+    }
+  };
+
+  const getFormatColor = (format) => {
+    switch(format) {
+      case 'Standard': return 'default';
+      case '3D': return 'info';
+      case '4DX': return 'secondary';
+      case 'IMAX': return 'primary';
+      case 'Premium': return 'warning';
+      default: return 'default';
+    }
+  };
+
+  // Group showtimes by format
+  const groupShowtimesByFormat = (showtimes) => {
+    return showtimes.reduce((acc, showtime) => {
+      const format = showtime.format || 'Standard';
+      if (!acc[format]) {
+        acc[format] = [];
+      }
+      acc[format].push(showtime);
+      return acc;
+    }, {});
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -276,45 +333,119 @@ const AvailableTheaters = () => {
 
                     {/* Showtimes */}
                     <Grid item xs={12} md={8}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                      <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                         Today's Showtimes
                       </Typography>
-                      <Grid container spacing={2}>
-                        {theater.showtimes.map((showtime, index) => (
-                          <Grid item xs={12} sm={6} md={4} key={index}>
-                            <Paper 
-                              sx={{ 
-                                p: 2, 
-                                textAlign: 'center',
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                '&:hover': {
-                                  boxShadow: 2,
-                                  cursor: 'pointer'
-                                }
-                              }}
-                              onClick={() => handleBookTicket(theater, showtime)}
-                            >
-                              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                                {showtime.time}
-                              </Typography>
-                              <Typography variant="body1" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
-                                {showtime.price}
-                              </Typography>
-                              <Chip 
-                                icon={<EventSeat />}
-                                label={`${showtime.seats} seats`}
-                                size="small"
-                                color={getSeatAvailabilityColor(showtime.seats)}
-                                sx={{ mb: 1 }}
-                              />
-                              <Typography variant="caption" display="block" color="text.secondary">
-                                {getSeatAvailabilityText(showtime.seats)}
-                              </Typography>
-                            </Paper>
+                      
+                      {/* Group showtimes by format */}
+                      {Object.entries(groupShowtimesByFormat(theater.showtimes))
+                        .sort(([a], [b]) => {
+                          // Sort formats: Standard, 3D, 4DX, IMAX, Premium
+                          const order = ['Standard', '3D', '4DX', 'IMAX', 'Premium'];
+                          return order.indexOf(a) - order.indexOf(b);
+                        })
+                        .map(([format, showtimes]) => (
+                        <Box key={format} sx={{ mb: 3 }}>
+                          {/* Format Header */}
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            mb: 2,
+                            p: 1,
+                            backgroundColor: 'action.hover',
+                            borderRadius: 1
+                          }}>
+                            <Typography variant="h6" sx={{ 
+                              fontSize: '1.1rem',
+                              fontWeight: 600,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1
+                            }}>
+                              <span style={{ fontSize: '1.2rem' }}>{getFormatIcon(format)}</span>
+                              {getFormatLabel(format)}
+                            </Typography>
+                            <Chip 
+                              label={getFormatDescription(format)}
+                              size="small"
+                              color={getFormatColor(format)}
+                              variant="outlined"
+                              sx={{ ml: 2 }}
+                            />
+                          </Box>
+                          
+                          {/* Showtimes for this format */}
+                          <Grid container spacing={2}>
+                            {showtimes.map((showtime, index) => (
+                              <Grid item xs={12} sm={6} md={4} key={`${format}-${index}`}>
+                                <Paper 
+                                  sx={{ 
+                                    p: 2, 
+                                    textAlign: 'center',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    position: 'relative',
+                                    '&:hover': {
+                                      boxShadow: 3,
+                                      cursor: 'pointer',
+                                      transform: 'translateY(-2px)',
+                                      transition: 'all 0.2s ease'
+                                    }
+                                  }}
+                                  onClick={() => handleBookTicket(theater, showtime)}
+                                >
+                                  {/* Format Badge */}
+                                  <Chip 
+                                    label={format}
+                                    size="small"
+                                    color={getFormatColor(format)}
+                                    sx={{ 
+                                      position: 'absolute',
+                                      top: 8,
+                                      right: 8,
+                                      fontSize: '0.7rem'
+                                    }}
+                                  />
+                                  
+                                  <Typography variant="h6" sx={{ 
+                                    fontWeight: 600, 
+                                    mb: 1,
+                                    mt: 1,
+                                    color: 'primary.main'
+                                  }}>
+                                    {showtime.time}
+                                  </Typography>
+                                  
+                                  <Typography variant="h6" color="secondary" sx={{ 
+                                    fontWeight: 700, 
+                                    mb: 1,
+                                    fontSize: '1.1rem'
+                                  }}>
+                                    {showtime.price}
+                                  </Typography>
+                                  
+                                  <Chip 
+                                    icon={<EventSeat />}
+                                    label={`${showtime.seats} seats`}
+                                    size="small"
+                                    color={getSeatAvailabilityColor(showtime.seats)}
+                                    sx={{ mb: 1 }}
+                                  />
+                                  
+                                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                                    {getSeatAvailabilityText(showtime.seats)}
+                                  </Typography>
+
+                                  {/* Screen Info */}
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    {showtime.screen_name || `Screen ${index + 1}`}
+                                  </Typography>
+                                </Paper>
+                              </Grid>
+                            ))}
                           </Grid>
-                        ))}
-                      </Grid>
+                        </Box>
+                      ))}
                     </Grid>
                   </Grid>
                 </CardContent>
