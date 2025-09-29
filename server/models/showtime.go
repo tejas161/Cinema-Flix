@@ -8,22 +8,25 @@ import (
 
 // Showtime represents a movie showtime
 type Showtime struct {
-	ID         bson.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	MovieID    int           `bson:"movie_id" json:"movie_id"`       // TMDB Movie ID
-	TheaterID  bson.ObjectID `bson:"theater_id" json:"theater_id"`   // Reference to Theater
-	ScreenID   bson.ObjectID `bson:"screen_id" json:"screen_id"`     // Reference to Screen
-	ShowDate   time.Time     `bson:"show_date" json:"show_date"`     // Date of the show
-	ShowTime   time.Time     `bson:"show_time" json:"show_time"`     // Time of the show
-	Duration   int           `bson:"duration" json:"duration"`       // Movie duration in minutes
-	Language   string        `bson:"language" json:"language"`       // Movie language
-	Format     string        `bson:"format" json:"format"`           // 2D, 3D, IMAX, 4DX
-	Status     string        `bson:"status" json:"status"`           // active, cancelled, house_full
-	Pricing    ShowPricing   `bson:"pricing" json:"pricing"`         // Pricing for this show
-	Seats      []Seat        `bson:"seats" json:"seats"`             // Seat availability
-	BookedSeats int          `bson:"booked_seats" json:"booked_seats"` // Count of booked seats
-	TotalSeats  int          `bson:"total_seats" json:"total_seats"`   // Total seats available
-	CreatedAt   time.Time     `bson:"created_at" json:"created_at"`
-	UpdatedAt   time.Time     `bson:"updated_at" json:"updated_at"`
+	ID            bson.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	MovieID       int           `bson:"movie_id" json:"movie_id"`                       // TMDB Movie ID
+	TheaterID     bson.ObjectID `bson:"theater_id" json:"theater_id"`                   // Reference to Theater
+	ScreenID      bson.ObjectID `bson:"screen_id" json:"screen_id"`                     // Reference to Screen
+	ShowDate      time.Time     `bson:"show_date" json:"show_date"`                     // Date of the show
+	ShowTime      time.Time     `bson:"show_time" json:"show_time"`                     // Time of the show
+	TimeString    string        `bson:"time_string,omitempty" json:"time_string"`       // Simple time string
+	DisplayTime   string        `bson:"display_time,omitempty" json:"display_time"`     // Display time string
+	FormattedTime string        `bson:"formatted_time,omitempty" json:"formatted_time"` // Another time string option
+	Duration      int           `bson:"duration" json:"duration"`                       // Movie duration in minutes
+	Language      string        `bson:"language" json:"language"`                       // Movie language
+	Format        string        `bson:"format" json:"format"`                           // 2D, 3D, IMAX, 4DX
+	Status        string        `bson:"status" json:"status"`                           // active, cancelled, house_full
+	Pricing       ShowPricing   `bson:"pricing" json:"pricing"`                         // Pricing for this show
+	Seats         []Seat        `bson:"seats" json:"seats"`                             // Seat availability
+	BookedSeats   int           `bson:"booked_seats" json:"booked_seats"`               // Count of booked seats
+	TotalSeats    int           `bson:"total_seats" json:"total_seats"`                 // Total seats available
+	CreatedAt     time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt     time.Time     `bson:"updated_at" json:"updated_at"`
 }
 
 // ShowPricing represents pricing for different seat categories
@@ -34,21 +37,21 @@ type ShowPricing struct {
 
 // PriceRange represents the price range for seat categories
 type PriceRange struct {
-	BasePrice    float64 `bson:"base_price" json:"base_price"`
+	BasePrice      float64 `bson:"base_price" json:"base_price"`
 	ConvenienceFee float64 `bson:"convenience_fee" json:"convenience_fee"`
-	Tax          float64 `bson:"tax" json:"tax"`
-	TotalPrice   float64 `bson:"total_price" json:"total_price"`
+	Tax            float64 `bson:"tax" json:"tax"`
+	TotalPrice     float64 `bson:"total_price" json:"total_price"`
 }
 
 // Seat represents an individual seat in a showtime
 type Seat struct {
-	SeatID     string `bson:"seat_id" json:"seat_id"`         // A1, A2, B1, etc.
-	RowID      string `bson:"row_id" json:"row_id"`           // A, B, C, etc.
-	SeatNumber int    `bson:"seat_number" json:"seat_number"` // 1, 2, 3, etc.
-	SeatType   string `bson:"seat_type" json:"seat_type"`     // premium, regular
-	Status     string `bson:"status" json:"status"`           // available, booked, blocked, maintenance
-	Price      float64 `bson:"price" json:"price"`            // Final price for this seat
-	BookedBy   string `bson:"booked_by,omitempty" json:"booked_by,omitempty"` // User ID who booked
+	SeatID     string     `bson:"seat_id" json:"seat_id"`                           // A1, A2, B1, etc.
+	RowID      string     `bson:"row_id" json:"row_id"`                             // A, B, C, etc.
+	SeatNumber int        `bson:"seat_number" json:"seat_number"`                   // 1, 2, 3, etc.
+	SeatType   string     `bson:"seat_type" json:"seat_type"`                       // premium, regular
+	Status     string     `bson:"status" json:"status"`                             // available, booked, blocked, maintenance
+	Price      float64    `bson:"price" json:"price"`                               // Final price for this seat
+	BookedBy   string     `bson:"booked_by,omitempty" json:"booked_by,omitempty"`   // User ID who booked
 	BlockedAt  *time.Time `bson:"blocked_at,omitempty" json:"blocked_at,omitempty"` // When seat was temporarily blocked
 }
 

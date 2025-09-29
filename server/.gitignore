@@ -1,0 +1,29 @@
+# Build artifacts
+Cinema-Flix
+test-build
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Log files
+*.log
+server.log
+
+# Test files
+tmp/
+temp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Go build cache
+go.work
+go.work.sum
+
+# Environment files
+.env.local
+.env.production

@@ -10,79 +10,40 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// CreateFallbackShowtimes creates showtimes for a movie that doesn't have any
-func (h *TheatersHandler) CreateFallbackShowtimes(movieID int) error {
-	log.Printf("[FALLBACK] Creating fallback showtimes for movie ID: %d", movieID)
-	
+// CreateShowtimesForMovie creates showtimes for any movie ID (called once per movie)
+func (h *TheatersHandler) CreateShowtimesForMovie(movieID int) error {
+	log.Printf("[SHOWTIMES] Creating showtimes for movie ID: %d", movieID)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Get all theaters
-	cursor, err := h.theatersCollection.Find(ctx, bson.M{})
+	// Quick check - do showtimes already exist?
+	existingCount, err := h.showtimesCollection.CountDocuments(ctx, bson.M{
+		"movie_id": movieID,
+		"status":   "active",
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check existing showtimes: %v", err)
 	}
-	defer cursor.Close(ctx)
+	
+	if existingCount > 0 {
+		log.Printf("[SHOWTIMES] Movie %d already has %d showtimes, skipping", movieID, existingCount)
+		return nil
+	}
 
-	var theaters []models.Theater
-	if err := cursor.All(ctx, &theaters); err != nil {
-		return err
+	// Get all theaters
+	theaters, err := h.getAllTheaters(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get theaters: %v", err)
 	}
 
 	if len(theaters) == 0 {
 		return fmt.Errorf("no theaters found")
 	}
 
-	var showtimes []models.Showtime
-	today := time.Now()
-
-	// Generate showtimes for next 7 days
-	for i := 0; i < 7; i++ {
-		showDate := today.AddDate(0, 0, i)
-		startOfDay := time.Date(showDate.Year(), showDate.Month(), showDate.Day(), 0, 0, 0, 0, showDate.Location())
-
-		for _, theater := range theaters {
-			for _, screen := range theater.Screens {
-				// Generate 3-4 showtimes per day per screen
-				showTimes := []time.Time{
-					startOfDay.Add(11*time.Hour + 0*time.Minute),  // 11:00 AM
-					startOfDay.Add(15*time.Hour + 30*time.Minute), // 3:30 PM
-					startOfDay.Add(19*time.Hour + 0*time.Minute),  // 7:00 PM
-					startOfDay.Add(22*time.Hour + 15*time.Minute), // 10:15 PM
-				}
-
-				for _, showTime := range showTimes {
-					// Skip past showtimes
-					if showTime.Before(time.Now()) {
-						continue
-					}
-
-					showtime := models.NewShowtime(
-						movieID,
-						theater.ID,
-						screen.ID,
-						startOfDay,
-						showTime,
-						140, // 2h 20m default duration
-						"English",
-						screen.Type,
-					)
-
-					// Set standard pricing
-					showtime.Pricing = h.getStandardPricing(screen.Type)
-
-					// Initialize seats
-					showtime.Seats = h.initializeSeatsForFallback(screen)
-					showtime.TotalSeats = screen.TotalSeats
-					showtime.BookedSeats = h.getRandomBookedCount(screen.TotalSeats)
-
-					showtimes = append(showtimes, *showtime)
-				}
-			}
-		}
-	}
-
-	// Insert the fallback showtimes
+	// Create showtimes for this movie
+	showtimes := h.generateShowtimesForMovie(movieID, theaters)
+	
 	if len(showtimes) > 0 {
 		var documents []interface{}
 		for i := range showtimes {
@@ -90,33 +51,101 @@ func (h *TheatersHandler) CreateFallbackShowtimes(movieID int) error {
 			documents = append(documents, showtimes[i])
 		}
 
-		result, err := h.showtimesCollection.InsertMany(ctx, documents)
+		_, err := h.showtimesCollection.InsertMany(ctx, documents)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to insert showtimes: %v", err)
 		}
 
-		log.Printf("[FALLBACK] Successfully created %d fallback showtimes for movie ID: %d", len(result.InsertedIDs), movieID)
+		log.Printf("[SHOWTIMES] Successfully created %d showtimes for movie ID: %d", len(documents), movieID)
 	}
 
 	return nil
 }
 
+func (h *TheatersHandler) getAllTheaters(ctx context.Context) ([]models.Theater, error) {
+	cursor, err := h.theatersCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var theaters []models.Theater
+	if err := cursor.All(ctx, &theaters); err != nil {
+		return nil, err
+	}
+
+	return theaters, nil
+}
+
+func (h *TheatersHandler) generateShowtimesForMovie(movieID int, theaters []models.Theater) []models.Showtime {
+	var showtimes []models.Showtime
+	staticDate := time.Date(2025, 9, 28, 0, 0, 0, 0, time.UTC)
+
+	for _, theater := range theaters {
+		for _, screen := range theater.Screens {
+			// Different show times based on screen type
+			var timeStrings []string
+			switch screen.Type {
+			case "IMAX", "4DX", "Premium":
+				timeStrings = []string{"11:30 AM", "3:00 PM", "7:30 PM"}
+			default:
+				timeStrings = []string{"3:00 PM", "7:30 PM"}
+			}
+
+			for _, timeStr := range timeStrings {
+				// Parse time
+				parsedTime, err := time.Parse("3:04 PM", timeStr)
+				if err != nil {
+					continue
+				}
+				
+				showTime := time.Date(staticDate.Year(), staticDate.Month(), staticDate.Day(),
+					parsedTime.Hour(), parsedTime.Minute(), 0, 0, staticDate.Location())
+
+				showtime := models.NewShowtime(
+					movieID,
+					theater.ID,
+					screen.ID,
+					staticDate,
+					showTime,
+					140, // Duration
+					"English",
+					screen.Type,
+				)
+				
+				showtime.TimeString = timeStr
+				showtime.Pricing = h.getStandardPricing(screen.Type)
+				showtime.Seats = h.initializeSeatsForShowtime(screen)
+				showtime.TotalSeats = screen.TotalSeats
+				showtime.BookedSeats = h.getRandomBookedCount(screen.TotalSeats)
+
+				showtimes = append(showtimes, *showtime)
+			}
+		}
+	}
+
+	return showtimes
+}
+
 func (h *TheatersHandler) getStandardPricing(screenType string) models.ShowPricing {
-	premiumBase := 15.99
-	regularBase := 11.99
+	premiumBase := 380.0
+	regularBase := 280.0
 	
 	switch screenType {
 	case "IMAX":
-		premiumBase = 20.99
-		regularBase = 16.99
+		premiumBase = 650.0
+		regularBase = 500.0
 	case "4DX":
-		premiumBase = 24.99
-		regularBase = 19.99
+		premiumBase = 850.0
+		regularBase = 650.0
 	case "3D":
-		premiumBase = 17.99
-		regularBase = 13.99
+		premiumBase = 450.0
+		regularBase = 330.0
+	case "Premium":
+		premiumBase = 1200.0
+		regularBase = 950.0
 	}
-	
+
 	return models.ShowPricing{
 		Premium: models.PriceRange{
 			BasePrice:      premiumBase,
@@ -133,47 +162,32 @@ func (h *TheatersHandler) getStandardPricing(screenType string) models.ShowPrici
 	}
 }
 
-func (h *TheatersHandler) initializeSeatsForFallback(screen models.Screen) []models.Seat {
+func (h *TheatersHandler) initializeSeatsForShowtime(screen models.Screen) []models.Seat {
 	var seats []models.Seat
-
+	
 	for _, row := range screen.SeatLayout.Rows {
-		for seatNum := 1; seatNum <= row.SeatCount; seatNum++ {
-			seatID := fmt.Sprintf("%s%d", row.RowID, seatNum)
-			
-			var price float64
-			switch row.RowType {
-			case "premium":
-				price = row.Price.Afternoon
-			case "regular":
-				price = row.Price.Afternoon
-			default:
-				price = row.Price.Afternoon
-			}
-
+		for i := 1; i <= row.SeatCount; i++ {
 			seat := models.Seat{
-				SeatID:     seatID,
+				SeatID:     fmt.Sprintf("%s%d", row.RowID, i),
 				RowID:      row.RowID,
-				SeatNumber: seatNum,
+				SeatNumber: i,
 				SeatType:   row.RowType,
 				Status:     "available",
-				Price:      price,
+				Price:      row.Price.Morning,
 			}
-			
 			seats = append(seats, seat)
 		}
 	}
-
+	
 	return seats
 }
 
 func (h *TheatersHandler) getRandomBookedCount(totalSeats int) int {
-	// 5-20% random booking for fallback
-	minBooked := int(float64(totalSeats) * 0.05)
-	maxBooked := int(float64(totalSeats) * 0.20)
-	
-	if minBooked == maxBooked {
-		return minBooked
+	// Return reasonable booked seats for demo
+	if totalSeats > 200 {
+		return 35
+	} else if totalSeats > 100 {
+		return 25
 	}
-	
-	return minBooked + (int(time.Now().UnixNano()) % (maxBooked - minBooked))
+	return 15
 }

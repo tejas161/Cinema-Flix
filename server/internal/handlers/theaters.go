@@ -40,19 +40,12 @@ func (h *TheatersHandler) GetTheatersByMovie() fiber.Handler {
 			})
 		}
 
-		// Get current date for finding showtimes
-		today := time.Now()
-		startOfDay := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-		endOfWeek := startOfDay.AddDate(0, 0, 7) // Next 7 days
+		// Simple showtime query for demo (no date filtering needed)
 
-		// Find all showtimes for this movie in the next 7 days
+		// Find all showtimes for this movie (no time filtering for demo)
 		showtimeFilter := bson.M{
 			"movie_id": movieID,
-			"show_date": bson.M{
-				"$gte": startOfDay,
-				"$lt":  endOfWeek,
-			},
-			"status": "active",
+			"status":   "active",
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -88,23 +81,50 @@ func (h *TheatersHandler) GetTheatersByMovie() fiber.Handler {
 			theaterIDs = append(theaterIDs, theaterID)
 		}
 
-		if len(theaterIDs) == 0 {
-			// No existing showtimes found, create fallback showtimes
-			log.Printf("[FALLBACK] No showtimes found for movie ID: %d, creating fallback showtimes", movieID)
+		// If no showtimes exist, create them for this movie
+		if len(showtimes) == 0 {
+			log.Printf("[API] No showtimes found for movie %d, creating them...", movieID)
+			
+			// Create showtimes synchronously for this movie
+			err := h.CreateShowtimesForMovie(movieID)
+			if err != nil {
+				log.Printf("[API] Failed to create showtimes for movie %d: %v", movieID, err)
+				return c.JSON(fiber.Map{
+					"success": true,
+					"data":    []interface{}{},
+					"message": "No theaters available for this movie at the moment.",
+				})
+			}
 
-			// Create fallback showtimes in background
-			go func() {
-				if err := h.CreateFallbackShowtimes(movieID); err != nil {
-					log.Printf("[FALLBACK] Failed to create fallback showtimes for movie %d: %v", movieID, err)
-				}
-			}()
+			// Now fetch the newly created showtimes
+			showtimesCursor, err = h.showtimesCollection.Find(ctx, showtimeFilter)
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{
+					"success": false,
+					"error":   "Failed to fetch newly created showtimes",
+				})
+			}
+			defer showtimesCursor.Close(ctx)
 
-			// For immediate response, return empty array but indicate fallback is in progress
-			return c.JSON(fiber.Map{
-				"success": true,
-				"data":    []interface{}{},
-				"message": "Showtimes are being prepared for this movie. Please check back in a moment.",
-			})
+			if err := showtimesCursor.All(ctx, &showtimes); err != nil {
+				return c.Status(500).JSON(fiber.Map{
+					"success": false,
+					"error":   "Failed to decode newly created showtimes",
+				})
+			}
+
+			// Update theater IDs map with new showtimes
+			theaterIDsMap = make(map[bson.ObjectID]bool)
+			for _, showtime := range showtimes {
+				theaterIDsMap[showtime.TheaterID] = true
+			}
+
+			theaterIDs = nil
+			for theaterID := range theaterIDsMap {
+				theaterIDs = append(theaterIDs, theaterID)
+			}
+
+			log.Printf("[API] Created and fetched %d showtimes for movie %d", len(showtimes), movieID)
 		}
 
 		// Find theaters
@@ -146,13 +166,20 @@ func (h *TheatersHandler) buildTheatersResponse(theaters []models.Theater, showt
 	var response []map[string]interface{}
 
 	for _, theater := range theaters {
-		// Filter showtimes for this theater
+		// Filter showtimes for this theater only
 		var theaterShowtimes []models.Showtime
 		for _, showtime := range showtimes {
-			if showtime.TheaterID == theater.ID {
+			// CRITICAL: Only include showtimes that belong to THIS theater
+			// Also filter out lock documents and creating status
+			if showtime.TheaterID == theater.ID &&
+				showtime.Status == "active" &&
+				showtime.TimeString != "__CREATING__" &&
+				showtime.Language != "test" {
 				theaterShowtimes = append(theaterShowtimes, showtime)
 			}
 		}
+
+		log.Printf("[DEBUG] Theater %s has %d filtered showtimes", theater.Name, len(theaterShowtimes))
 
 		// Group showtimes by date
 		showtimesByDate := make(map[string][]map[string]interface{})
@@ -161,10 +188,22 @@ func (h *TheatersHandler) buildTheatersResponse(theaters []models.Theater, showt
 
 			availableSeats := showtime.AvailableSeats()
 
+			// Try multiple string fields - user's brilliant solution!
+			var displayTime string
+			if showtime.TimeString != "" {
+				displayTime = showtime.TimeString
+			} else if showtime.DisplayTime != "" {
+				displayTime = showtime.DisplayTime
+			} else if showtime.FormattedTime != "" {
+				displayTime = showtime.FormattedTime
+			} else {
+				displayTime = showtime.ShowTime.Format("3:04 PM") // Fallback
+			}
+
 			showtimeData := map[string]interface{}{
 				"id":          showtime.ID.Hex(),
-				"time":        showtime.ShowTime.Format("3:04 PM"),
-				"price":       fmt.Sprintf("$%.2f", showtime.Pricing.Regular.TotalPrice),
+				"time":        displayTime,
+				"price":       fmt.Sprintf("₹%.0f", showtime.Pricing.Regular.TotalPrice),
 				"seats":       availableSeats,
 				"format":      showtime.Format,
 				"language":    showtime.Language,
@@ -174,11 +213,10 @@ func (h *TheatersHandler) buildTheatersResponse(theaters []models.Theater, showt
 			showtimesByDate[dateKey] = append(showtimesByDate[dateKey], showtimeData)
 		}
 
-		// For today's showtimes (backward compatibility with frontend)
-		todayKey := time.Now().Format("2006-01-02")
-		todayShowtimes := showtimesByDate[todayKey]
-		if todayShowtimes == nil {
-			todayShowtimes = []map[string]interface{}{}
+		// For static demo, use all showtimes regardless of date
+		var allShowtimes []map[string]interface{}
+		for _, showtimeList := range showtimesByDate {
+			allShowtimes = append(allShowtimes, showtimeList...)
 		}
 
 		theaterData := map[string]interface{}{
@@ -189,7 +227,7 @@ func (h *TheatersHandler) buildTheatersResponse(theaters []models.Theater, showt
 			"rating":    theater.Rating,
 			"distance":  theater.Distance,
 			"amenities": theater.Amenities,
-			"showtimes": todayShowtimes,  // Today's showtimes for backward compatibility
+			"showtimes": allShowtimes,    // All showtimes for static demo
 			"schedule":  showtimesByDate, // All showtimes grouped by date
 		}
 

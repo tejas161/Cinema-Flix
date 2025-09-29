@@ -72,3 +72,8 @@ func DisconnectMongoDB() error {
 func GetCollection(name string) *mongo.Collection {
 	return MongoDB.Collection(name)
 }
+
+// GetTheaterCollection returns the theater collection
+func GetTheaterCollection() *mongo.Collection {
+	return MongoDB.Collection("theaters")
+}

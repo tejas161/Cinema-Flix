@@ -16,6 +16,9 @@ func SetupRoutes(app *fiber.App) {
 	theatersHandler := handlers.NewTheatersHandler()
 	showtimesHandler := handlers.NewShowtimesHandler()
 	bookingsHandler := handlers.NewBookingsHandler()
+	
+	// Initialize theater management handler
+	theaterMgmtHandler := handlers.NewTheaterManagementHandler(config.GetTheaterCollection())
 
 	// Public routes
 	app.Get("/health", handlers.HealthCheck)
@@ -32,10 +35,19 @@ func SetupRoutes(app *fiber.App) {
 	app.Get("/api/movies/:id", moviesHandler.GetMovieDetails())
 	app.Get("/api/movies/:id/theaters", theatersHandler.GetTheatersByMovie())
 
-	// Theater routes
+	// Theater routes (existing - for showing theaters with showtimes)
 	app.Get("/api/theaters", theatersHandler.GetAllTheaters())
 	app.Get("/api/theaters/:id", theatersHandler.GetTheaterByID())
 	app.Post("/api/theaters", theatersHandler.CreateTheater())
+
+	// Theater Management API routes (for CRUD operations)
+	app.Get("/api/admin/theaters", theaterMgmtHandler.GetAllTheaters())
+	app.Get("/api/admin/theaters/stats", theaterMgmtHandler.GetTheaterStats())
+	app.Get("/api/admin/theaters/:id", theaterMgmtHandler.GetTheaterByID())
+	app.Post("/api/admin/theaters", theaterMgmtHandler.CreateTheater())
+	app.Post("/api/admin/theaters/bulk", theaterMgmtHandler.BulkCreateTheaters())
+	app.Put("/api/admin/theaters/:id", theaterMgmtHandler.UpdateTheater())
+	app.Delete("/api/admin/theaters/:id", theaterMgmtHandler.DeleteTheater())
 
 	// Showtime routes
 	app.Get("/api/showtimes/:id", showtimesHandler.GetShowtimeByID())
